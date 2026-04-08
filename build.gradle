@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.5'
+}
+
+group = 'com.finvibe'
+version = '0.0.1-SNAPSHOT'
+description = 'API Gateway project using Spring Cloud Gateway'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
+    implementation platform('org.springframework.cloud:spring-cloud-dependencies:2025.1.1')
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webmvc'
+
+    testImplementation platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.named('jar') {
+    enabled = false
+}
