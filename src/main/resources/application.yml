@@ -12,6 +12,12 @@ spring:
             enabled: false
           x-forwarded:
             enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${FINVIBE_GATEWAY_JWT_ISSUER_URI:}
+          jwk-set-uri: ${FINVIBE_GATEWAY_JWT_JWK_SET_URI:}
 
 management:
   endpoints:
@@ -21,6 +27,9 @@ management:
 
 finvibe:
   gateway:
+    security:
+      jwt:
+        secret: ${FINVIBE_GATEWAY_JWT_SECRET:finvibe-gateway-dev-secret-change-me-1234567890}
     services:
       market-url: ws://127.0.0.1:18090
       was-url: http://127.0.0.1:8080
