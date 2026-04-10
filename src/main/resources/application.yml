@@ -42,5 +42,5 @@ finvibe:
       connect-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CONNECT_TIMEOUT:PT2S}
       command-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
     services:
-      market-url: ws://127.0.0.1:18090
-      was-url: http://127.0.0.1:8080
+      market-url: ${FINVIBE_GATEWAY_MARKET_URL:ws://127.0.0.1:18090}
+      was-url: ${FINVIBE_GATEWAY_WAS_URL:http://127.0.0.1:8080}
