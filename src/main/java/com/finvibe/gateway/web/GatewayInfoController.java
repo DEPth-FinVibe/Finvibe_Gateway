@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 현재 Gateway의 기본 메타데이터와 라우팅 정보를 노출하는 컨트롤러다.
+ */
 @RestController
 @RequestMapping("/gateway")
 public class GatewayInfoController {
@@ -22,6 +25,11 @@ public class GatewayInfoController {
         this.wasServiceUrl = wasServiceUrl;
     }
 
+    /**
+     * Gateway 식별자와 핵심 라우팅 정보를 반환한다.
+     *
+     * @return application 이름과 route 목록
+     */
     @GetMapping("/info")
     public Map<String, Object> info() {
         return Map.of(

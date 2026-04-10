@@ -18,6 +18,10 @@ spring:
         jwt:
           issuer-uri: ${FINVIBE_GATEWAY_JWT_ISSUER_URI:}
           jwk-set-uri: ${FINVIBE_GATEWAY_JWT_JWK_SET_URI:}
+  data:
+    redis:
+      url: ${FINVIBE_GATEWAY_TOKEN_FAMILY_REDIS_URI:redis://127.0.0.1:6379/0}
+      timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
 
 management:
   endpoints:
@@ -30,6 +34,13 @@ finvibe:
     security:
       jwt:
         secret: ${FINVIBE_GATEWAY_JWT_SECRET:finvibe-gateway-dev-secret-change-me-1234567890}
+    token-family:
+      enabled: ${FINVIBE_GATEWAY_TOKEN_FAMILY_ENABLED:true}
+      redis-uri: ${FINVIBE_GATEWAY_TOKEN_FAMILY_REDIS_URI:redis://127.0.0.1:6379/0}
+      key-prefix: ${FINVIBE_GATEWAY_TOKEN_FAMILY_KEY_PREFIX:token-family:}
+      cache-ttl: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CACHE_TTL:PT30S}
+      connect-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CONNECT_TIMEOUT:PT2S}
+      command-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
     services:
       market-url: ws://127.0.0.1:18090
       was-url: http://127.0.0.1:8080
