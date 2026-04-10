@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: finvibe-gateway
+  cloud:
+    gateway:
+      mvc:
+        forwarded-request-headers-filter:
+          enabled: false
+        x-forwarded-request-headers-filter:
+          enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+finvibe:
+  gateway:
+    services:
+      auth-url: http://localhost:8081
+      core-url: http://localhost:8082

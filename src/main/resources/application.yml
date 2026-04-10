@@ -6,11 +6,12 @@ spring:
     name: finvibe-gateway
   cloud:
     gateway:
-      mvc:
-        forwarded-request-headers-filter:
-          enabled: false
-        x-forwarded-request-headers-filter:
-          enabled: false
+      server:
+        webflux:
+          forwarded:
+            enabled: false
+          x-forwarded:
+            enabled: false
 
 management:
   endpoints:
@@ -21,5 +22,5 @@ management:
 finvibe:
   gateway:
     services:
-      auth-url: http://localhost:8081
-      core-url: http://localhost:8082
+      market-url: ws://127.0.0.1:18090
+      was-url: http://127.0.0.1:8080

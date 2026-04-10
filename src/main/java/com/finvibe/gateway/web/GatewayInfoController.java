@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/gateway")
 public class GatewayInfoController {
 
-    private final String authServiceUrl;
-    private final String coreServiceUrl;
+    private final String marketServiceUrl;
+    private final String wasServiceUrl;
 
     public GatewayInfoController(
-            @Value("${finvibe.gateway.services.auth-url}") String authServiceUrl,
-            @Value("${finvibe.gateway.services.core-url}") String coreServiceUrl) {
-        this.authServiceUrl = authServiceUrl;
-        this.coreServiceUrl = coreServiceUrl;
+            @Value("${finvibe.gateway.services.market-url}") String marketServiceUrl,
+            @Value("${finvibe.gateway.services.was-url}") String wasServiceUrl) {
+        this.marketServiceUrl = marketServiceUrl;
+        this.wasServiceUrl = wasServiceUrl;
     }
 
     @GetMapping("/info")
@@ -27,8 +27,7 @@ public class GatewayInfoController {
         return Map.of(
                 "application", "finvibe-gateway",
                 "routes", List.of(
-                        Map.of("id", "auth-service", "path", "/api/auth/**", "target", authServiceUrl),
-                        Map.of("id", "core-service", "path", "/api/core/**", "target", coreServiceUrl),
-                        Map.of("id", "httpbin-sample", "path", "/external/httpbin/**", "target", "https://httpbin.org")));
+                        Map.of("id", "market-ws-service", "path", "/api/market/ws/**", "target", marketServiceUrl),
+                        Map.of("id", "was-service", "path", "/api/**", "target", wasServiceUrl)));
     }
 }
