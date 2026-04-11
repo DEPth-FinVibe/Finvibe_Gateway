@@ -6,13 +6,30 @@ spring:
     name: finvibe-gateway
   cloud:
     gateway:
-      mvc:
-        forwarded-request-headers-filter:
-          enabled: false
-        x-forwarded-request-headers-filter:
-          enabled: false
+      server:
+        webflux:
+          forwarded:
+            enabled: false
+          x-forwarded:
+            enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${FINVIBE_GATEWAY_JWT_ISSUER_URI:}
+          jwk-set-uri: ${FINVIBE_GATEWAY_JWT_JWK_SET_URI:}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
 
 management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
   endpoints:
     web:
       exposure:
@@ -20,6 +37,16 @@ management:
 
 finvibe:
   gateway:
+    security:
+      jwt:
+        secret: ${FINVIBE_GATEWAY_JWT_SECRET:finvibe-gateway-dev-secret-change-me-1234567890}
+    token-family:
+      enabled: ${FINVIBE_GATEWAY_TOKEN_FAMILY_ENABLED:true}
+      redis-uri: ${FINVIBE_GATEWAY_TOKEN_FAMILY_REDIS_URI:redis://127.0.0.1:6379/0}
+      key-prefix: ${FINVIBE_GATEWAY_TOKEN_FAMILY_KEY_PREFIX:token-family:}
+      cache-ttl: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CACHE_TTL:PT30S}
+      connect-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CONNECT_TIMEOUT:PT2S}
+      command-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
     services:
-      auth-url: http://localhost:8081
-      core-url: http://localhost:8082
+      websocket-listener-url: ${FINVIBE_GATEWAY_WEBSOCKET_LISTENER_URL:ws://127.0.0.1:18090}
+      was-url: ${FINVIBE_GATEWAY_WAS_URL:http://127.0.0.1:8080}

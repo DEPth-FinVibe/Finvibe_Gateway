@@ -16,20 +16,20 @@ public class GatewayRoutesConfig {
      * 시장 WebSocket과 일반 WAS 요청에 대한 라우트를 구성한다.
      *
      * @param builder route locator builder
-     * @param marketServiceUrl 시장 WebSocket 대상 주소
+     * @param websocketListenerUrl 시장 WebSocket 대상 주소
      * @param wasServiceUrl 일반 API 대상 주소
      * @return 구성된 route locator
      */
     @Bean
     RouteLocator gatewayRoutes(
             RouteLocatorBuilder builder,
-            @Value("${finvibe.gateway.services.market-url}") String marketServiceUrl,
+            @Value("${finvibe.gateway.services.websocket-listener-url}") String websocketListenerUrl,
             @Value("${finvibe.gateway.services.was-url}") String wasServiceUrl) {
         return builder.routes()
-                .route("market-ws-service", r -> r.order(-1)
+                .route("websocketListener", r -> r.order(-1)
                         .path("/api/market/ws/**")
                         .filters(f -> f.stripPrefix(1))
-                        .uri(marketServiceUrl))
+                        .uri(websocketListenerUrl))
                 .route("was-service", r -> r.order(0)
                         .path("/api/**")
                         .uri(wasServiceUrl))

@@ -20,10 +20,16 @@ spring:
           jwk-set-uri: ${FINVIBE_GATEWAY_JWT_JWK_SET_URI:}
   data:
     redis:
-      url: ${FINVIBE_GATEWAY_TOKEN_FAMILY_REDIS_URI:redis://127.0.0.1:6379/0}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
       timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
 
 management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
   endpoints:
     web:
       exposure:
@@ -42,5 +48,5 @@ finvibe:
       connect-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CONNECT_TIMEOUT:PT2S}
       command-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
     services:
-      market-url: ${FINVIBE_GATEWAY_MARKET_URL:ws://127.0.0.1:18090}
+      websocket-listener-url: ${FINVIBE_GATEWAY_WEBSOCKET_LISTENER_URL:ws://127.0.0.1:18090}
       was-url: ${FINVIBE_GATEWAY_WAS_URL:http://127.0.0.1:8080}

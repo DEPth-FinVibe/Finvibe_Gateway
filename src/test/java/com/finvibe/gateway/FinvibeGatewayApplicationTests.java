@@ -11,7 +11,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringBootTest(properties = {
-        "finvibe.gateway.services.market-url=ws://localhost:18090",
+        "finvibe.gateway.services.websocket-listener-url=ws://localhost:18090",
         "finvibe.gateway.services.was-url=http://localhost:18081"
 })
 class FinvibeGatewayApplicationTests {
@@ -31,7 +31,7 @@ class FinvibeGatewayApplicationTests {
 		assertThat(routes)
 				.isNotNull()
 				.extracting(Route::getId)
-				.containsExactly("market-ws-service", "was-service");
+				.containsExactly("websocketListener", "was-service");
 		assertThat(routes)
 				.extracting(route -> route.getUri().toString())
 				.containsExactly("ws://localhost:18090", "http://localhost:18081");

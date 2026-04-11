@@ -59,7 +59,7 @@ class GatewaySecurityIntegrationTests {
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("finvibe.gateway.security.jwt.secret", () -> JWT_SECRET);
-        registry.add("finvibe.gateway.services.market-url", () -> "ws://localhost:18090");
+        registry.add("finvibe.gateway.services.websocket-listener-url", () -> "ws://localhost:18090");
         registry.add("finvibe.gateway.services.was-url", () -> "http://127.0.0.1:" + downstreamPort());
         registry.add("finvibe.gateway.token-family.cache-ttl", () -> "PT30S");
     }
