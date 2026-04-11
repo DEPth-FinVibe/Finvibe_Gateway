@@ -8,7 +8,7 @@ on:
 env:
   IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME || format('{0}/finvibe-gateway', secrets.DOCKERHUB_USERNAME) }}
   CONTAINER_NAME: ${{ vars.DEPLOY_CONTAINER_NAME || 'finvibe-gateway' }}
-  APP_PORT: ${{ vars.APP_PORT || '8080' }}
+  APP_PORT: ${{ vars.APP_PORT || '8070' }}
   LOG_DIR_HOST: ${{ vars.LOG_DIR_HOST || '/var/log/finvibe-gateway' }}
   PRIMARY_DOCKER_NETWORK: ${{ vars.PRIMARY_DOCKER_NETWORK || 'infra_bridge' }}
   SECONDARY_DOCKER_NETWORK: ${{ vars.SECONDARY_DOCKER_NETWORK || 'monitoring_net' }}
