@@ -73,6 +73,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_NAME,CONTAINER_NAME,APP_PORT,LOG_DIR_HOST,PRIMARY_DOCKER_NETWORK,SECONDARY_DOCKER_NETWORK,IMAGE_TAG,FINVIBE_GATEWAY_JWT_SECRET,REDIS_HOST,REDIS_PORT,REDIS_PASSWORD,FINVIBE_GATEWAY_WEBSOCKET_LISTENER_URL,FINVIBE_GATEWAY_WAS_URL,SPRING_PROFILES_ACTIVE
           script: |
+            bash -lc '
             set -eu
 
             echo "Deploy target hostname:"
@@ -110,7 +111,7 @@ jobs:
               exit 1
             }
 
-            if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
+            if docker ps -a --format "{{.Names}}" | grep -Eq "^${CONTAINER_NAME}\$"; then
               docker rm -f "${CONTAINER_NAME}"
             fi
 
@@ -137,7 +138,7 @@ jobs:
             fi
 
             for i in $(seq 1 60); do
-              if ! docker ps --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
+              if ! docker ps --format "{{.Names}}" | grep -Eq "^${CONTAINER_NAME}\$"; then
                 echo "Container exited before becoming healthy"
                 docker logs "${CONTAINER_NAME}" || true
                 exit 1
@@ -153,7 +154,8 @@ jobs:
             done
 
             echo "Readiness check failed. Container state:"
-            docker inspect "${CONTAINER_NAME}" --format '{{json .State}}' || true
+            docker inspect "${CONTAINER_NAME}" --format "{{json .State}}" || true
             echo "Container logs:"
             docker logs "${CONTAINER_NAME}" || true
             exit 1
+            '
