@@ -48,7 +48,7 @@
 - `DEPLOY_CONTAINER_NAME`
   기본값: `finvibe-gateway`
 - `APP_PORT`
-  기본값: `8080`
+  기본값: `8070`
 - `LOG_DIR_HOST`
   기본값: `/var/log/finvibe-gateway`
 - `PRIMARY_DOCKER_NETWORK`
@@ -125,7 +125,7 @@ http://localhost:${APP_PORT}/actuator/health/readiness
 ```bash
 docker ps
 docker logs finvibe-gateway
-curl http://localhost:8080/actuator/health/readiness
+curl http://localhost:8070/actuator/health/readiness
 ```
 
 포트 또는 컨테이너 이름을 변경했다면 값도 함께 바꿔서 확인한다.
