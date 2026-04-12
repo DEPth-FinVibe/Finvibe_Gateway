@@ -27,11 +27,10 @@ public class GatewayRoutesConfig {
             @Value("${finvibe.gateway.services.was-url}") String wasServiceUrl) {
         return builder.routes()
                 .route("websocketListener", r -> r.order(-1)
-                        .path("/api/market/ws/**")
-                        .filters(f -> f.stripPrefix(1))
+                        .path("/market/ws/**")
                         .uri(websocketListenerUrl))
                 .route("was-service", r -> r.order(0)
-                        .path("/api/**")
+                        .path("/**")
                         .uri(wasServiceUrl))
                 .build();
     }
