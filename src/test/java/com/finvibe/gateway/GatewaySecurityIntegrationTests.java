@@ -112,6 +112,15 @@ class GatewaySecurityIntegrationTests {
     }
 
     @Test
+    void blocksExternalInternalPathRequests() throws Exception {
+        webTestClient.get()
+                .uri("/internal/auth/token-families/" + ACTIVE_FAMILY_ID)
+                .header(AUTHORIZATION, "Bearer " + createJwt(JWT_SECRET, Instant.now().plusSeconds(300), ACTIVE_FAMILY_ID))
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
     void forwardsProtectedApiWithValidJwt() throws Exception {
         webTestClient.get()
                 .uri("/api/secured")

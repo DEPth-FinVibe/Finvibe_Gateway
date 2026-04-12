@@ -17,7 +17,7 @@ public class TokenFamilyValidationProperties {
 
     private boolean enabled = true;
     private String redisUri = "redis://127.0.0.1:6379/0";
-    private String keyPrefix = "token-family:";
+    private String keyPrefix = "auth:family:";
     private Duration cacheTtl = Duration.ofSeconds(30);
     private Duration connectTimeout = Duration.ofSeconds(2);
     private Duration commandTimeout = Duration.ofSeconds(3);

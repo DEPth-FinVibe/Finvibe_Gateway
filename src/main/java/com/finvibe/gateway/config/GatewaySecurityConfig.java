@@ -22,13 +22,17 @@ import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.finvibe.gateway.tokenfamily.adapter.TokenFamilyValidationWebFilter;
 import com.finvibe.gateway.tokenfamily.application.TokenFamilyReader;
 import com.finvibe.gateway.tokenfamily.application.TokenFamilyValidationService;
 import com.finvibe.gateway.tokenfamily.domain.TokenFamilyPolicy;
 import com.finvibe.gateway.tokenfamily.infrastructure.CachingTokenFamilyReader;
+import com.finvibe.gateway.tokenfamily.infrastructure.FallbackTokenFamilyReader;
+import com.finvibe.gateway.tokenfamily.infrastructure.RedisTokenFamilyCacheWriter;
 import com.finvibe.gateway.tokenfamily.infrastructure.RedisTokenFamilyReader;
+import com.finvibe.gateway.tokenfamily.infrastructure.WasTokenFamilyReader;
 
 /**
  * Gateway 보안 체인과 TokenFamily 관련 bean 구성을 담당한다.
@@ -67,7 +71,8 @@ public class GatewaySecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(PUBLIC_PATHS).permitAll()
-                    .anyExchange().authenticated())
+                        .pathMatchers("/internal/**").denyAll()
+                        .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .build();
     }
@@ -141,6 +146,24 @@ public class GatewaySecurityConfig {
                 properties.getKeyPrefix());
     }
 
+    @Bean
+    @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
+    RedisTokenFamilyCacheWriter redisTokenFamilyCacheWriter(
+            TokenFamilyValidationProperties properties,
+            ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
+        return new RedisTokenFamilyCacheWriter(reactiveStringRedisTemplate, properties.getKeyPrefix());
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
+    WasTokenFamilyReader wasTokenFamilyReader(
+            @Value("${finvibe.gateway.services.was-url}") String wasServiceUrl) {
+        return new WasTokenFamilyReader(WebClient.builder()
+                .baseUrl(wasServiceUrl)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024))
+                .build());
+    }
+
     /**
      * Redis reader 위에 짧은 TTL 캐시를 덧붙인 TokenFamily 조회 포트를 생성한다.
      *
@@ -153,8 +176,14 @@ public class GatewaySecurityConfig {
     @ConditionalOnMissingBean(TokenFamilyReader.class)
     TokenFamilyReader tokenFamilyReader(
             TokenFamilyValidationProperties properties,
-            RedisTokenFamilyReader redisTokenFamilyReader) {
-        return new CachingTokenFamilyReader(redisTokenFamilyReader, properties.getCacheTtl());
+            RedisTokenFamilyReader redisTokenFamilyReader,
+            WasTokenFamilyReader wasTokenFamilyReader,
+            RedisTokenFamilyCacheWriter redisTokenFamilyCacheWriter) {
+        TokenFamilyReader fallbackTokenFamilyReader = new FallbackTokenFamilyReader(
+                redisTokenFamilyReader,
+                wasTokenFamilyReader,
+                redisTokenFamilyCacheWriter);
+        return new CachingTokenFamilyReader(fallbackTokenFamilyReader, properties.getCacheTtl());
     }
 
     /**

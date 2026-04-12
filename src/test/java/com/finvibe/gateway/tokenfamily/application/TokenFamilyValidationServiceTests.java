@@ -34,13 +34,13 @@ class TokenFamilyValidationServiceTests {
     }
 
     @Test
-    void returnsServiceUnavailableWhenReaderReturnsEmpty() {
+    void returnsUnauthorizedWhenReaderReturnsEmpty() {
         TokenFamilyReader tokenFamilyReader = familyId -> Mono.empty();
         TokenFamilyValidationService service = new TokenFamilyValidationService(tokenFamilyReader, tokenFamilyPolicy);
 
         TokenFamilyValidationResult result = service.validate("missing-family").block();
 
-        assertThat(result).isEqualTo(TokenFamilyValidationResult.DENY_SERVICE_UNAVAILABLE);
+        assertThat(result).isEqualTo(TokenFamilyValidationResult.DENY_UNAUTHORIZED);
     }
 
     @Test

@@ -24,7 +24,7 @@ public class TokenFamilyValidationService {
     public Mono<TokenFamilyValidationResult> validate(String familyId) {
         return tokenFamilyReader.findByFamilyId(familyId)
                 .map(tokenFamilyPolicy::validate)
-                .switchIfEmpty(Mono.just(TokenFamilyValidationResult.DENY_SERVICE_UNAVAILABLE))
+                .switchIfEmpty(Mono.just(TokenFamilyValidationResult.DENY_UNAUTHORIZED))
                 .onErrorReturn(TokenFamilyValidationResult.DENY_SERVICE_UNAVAILABLE);
     }
 }

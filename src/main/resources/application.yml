@@ -44,7 +44,7 @@ finvibe:
     token-family:
       enabled: ${FINVIBE_GATEWAY_TOKEN_FAMILY_ENABLED:true}
       redis-uri: ${FINVIBE_GATEWAY_TOKEN_FAMILY_REDIS_URI:redis://127.0.0.1:6379/0}
-      key-prefix: ${FINVIBE_GATEWAY_TOKEN_FAMILY_KEY_PREFIX:token-family:}
+      key-prefix: ${FINVIBE_GATEWAY_TOKEN_FAMILY_KEY_PREFIX:auth:family:}
       cache-ttl: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CACHE_TTL:PT30S}
       connect-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_CONNECT_TIMEOUT:PT2S}
       command-timeout: ${FINVIBE_GATEWAY_TOKEN_FAMILY_COMMAND_TIMEOUT:PT3S}
