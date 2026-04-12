@@ -4,6 +4,11 @@
 .idea
 bin
 build
+!build/
+build/*
+!build/libs/
+build/libs/*
+!build/libs/*.jar
 target
 *.iml
 *.log
