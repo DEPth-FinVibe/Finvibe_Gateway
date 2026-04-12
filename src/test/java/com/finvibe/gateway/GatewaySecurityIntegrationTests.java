@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +51,8 @@ class GatewaySecurityIntegrationTests {
     private static HttpServer downstreamServer;
     private static final ConcurrentHashMap<String, TokenFamilySnapshot> tokenFamilyStatuses = new ConcurrentHashMap<>();
     private static final Map<String, AtomicInteger> tokenFamilyLookupCounts = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, CachedResponse> tokenFamilyResponseCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, List<String>> downstreamRequestHeaders = new ConcurrentHashMap<>();
 
     private WebTestClient webTestClient;
 
@@ -62,6 +65,7 @@ class GatewaySecurityIntegrationTests {
         registry.add("finvibe.gateway.services.websocket-listener-url", () -> "ws://localhost:18090");
         registry.add("finvibe.gateway.services.was-url", () -> "http://127.0.0.1:" + downstreamPort());
         registry.add("finvibe.gateway.token-family.cache-ttl", () -> "PT30S");
+        registry.add("spring.cloud.gateway.server.webflux.trusted-proxies", () -> "127\\.0\\.0\\.1|::1");
     }
 
     @AfterAll
@@ -75,6 +79,8 @@ class GatewaySecurityIntegrationTests {
     void setUpClient() {
         tokenFamilyStatuses.clear();
         tokenFamilyLookupCounts.clear();
+        tokenFamilyResponseCache.clear();
+        downstreamRequestHeaders.clear();
         tokenFamilyStatuses.put(ACTIVE_FAMILY_ID, new TokenFamilySnapshot(ACTIVE_FAMILY_ID, TokenFamilyStatus.ACTIVE,
                 Instant.parse("2030-01-01T00:00:00Z")));
         tokenFamilyStatuses.put(INVALIDATED_FAMILY_ID,
@@ -184,6 +190,26 @@ class GatewaySecurityIntegrationTests {
         }
     }
 
+    @Test
+    void forwardsClientContextHeadersToDownstream() throws Exception {
+        webTestClient.get()
+                .uri("/api/secured")
+                .header(AUTHORIZATION, "Bearer " + createJwt(JWT_SECRET, Instant.now().plusSeconds(300), ACTIVE_FAMILY_ID))
+                .header("User-Agent", "Mozilla/5.0 TestBrowser")
+                .header("X-Forwarded-For", "203.0.113.10")
+                .exchange()
+                .expectStatus().isOk();
+
+        if (!"Mozilla/5.0 TestBrowser".equals(firstHeaderValue("User-Agent"))) {
+            throw new AssertionError("Expected User-Agent to be forwarded but was " + firstHeaderValue("User-Agent"));
+        }
+
+        if (!"203.0.113.10".equals(firstHeaderValue("X-Forwarded-For"))) {
+            throw new AssertionError(
+                    "Expected X-Forwarded-For to preserve client IP chain but was " + firstHeaderValue("X-Forwarded-For"));
+        }
+    }
+
     private static int downstreamPort() {
         ensureDownstreamServer();
         return downstreamServer.getAddress().getPort();
@@ -205,6 +231,7 @@ class GatewaySecurityIntegrationTests {
     }
 
     private static void handleSecured(HttpExchange exchange) throws IOException {
+        exchange.getRequestHeaders().forEach((name, values) -> downstreamRequestHeaders.put(name, List.copyOf(values)));
         byte[] body = "secured-ok".getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().add("Content-Type", "text/plain;charset=UTF-8");
         exchange.sendResponseHeaders(200, body.length);
@@ -212,6 +239,15 @@ class GatewaySecurityIntegrationTests {
         try (OutputStream outputStream = exchange.getResponseBody()) {
             outputStream.write(body);
         }
+    }
+
+    private static String firstHeaderValue(String headerName) {
+        for (Map.Entry<String, List<String>> entry : downstreamRequestHeaders.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(headerName) && !entry.getValue().isEmpty()) {
+                return entry.getValue().getFirst();
+            }
+        }
+        return null;
     }
 
     private static String createJwt(String secret, Instant expiresAt, String tokenFamilyId) throws JOSEException {
@@ -242,9 +278,8 @@ class GatewaySecurityIntegrationTests {
 
         @Bean
         TokenFamilyReader tokenFamilyReader() {
-            ConcurrentHashMap<String, CachedResponse> cache = new ConcurrentHashMap<>();
             return familyId -> {
-                CachedResponse cachedResponse = cache.get(familyId);
+                CachedResponse cachedResponse = tokenFamilyResponseCache.get(familyId);
                 if (cachedResponse != null && !cachedResponse.isExpired()) {
                     if (cachedResponse.error() != null) {
                         return reactor.core.publisher.Mono.error(cachedResponse.error());
@@ -258,29 +293,32 @@ class GatewaySecurityIntegrationTests {
                 tokenFamilyLookupCounts.computeIfAbsent(familyId, ignored -> new AtomicInteger()).incrementAndGet();
                 if (UNAVAILABLE_FAMILY_ID.equals(familyId)) {
                     IllegalStateException error = new IllegalStateException("Redis unavailable");
-                    cache.put(familyId, new CachedResponse(null, error, Instant.now().plus(Duration.ofSeconds(30))));
+                    tokenFamilyResponseCache.put(familyId,
+                            new CachedResponse(null, error, Instant.now().plus(Duration.ofSeconds(30))));
                     return reactor.core.publisher.Mono.error(error);
                 }
 
                 TokenFamilySnapshot response = tokenFamilyStatuses.get(familyId);
                 if (response == null) {
-                    cache.put(familyId, new CachedResponse(null, null, Instant.now().plus(Duration.ofSeconds(30))));
+                    tokenFamilyResponseCache.put(familyId,
+                            new CachedResponse(null, null, Instant.now().plus(Duration.ofSeconds(30))));
                     return reactor.core.publisher.Mono.empty();
                 }
 
-                cache.put(familyId, new CachedResponse(response, null, Instant.now().plus(Duration.ofSeconds(30))));
+                tokenFamilyResponseCache.put(familyId,
+                        new CachedResponse(response, null, Instant.now().plus(Duration.ofSeconds(30))));
                 return reactor.core.publisher.Mono.just(response);
             };
         }
+    }
 
-        private record CachedResponse(
-                TokenFamilySnapshot response,
-                RuntimeException error,
-                Instant expiresAt) {
+    private record CachedResponse(
+            TokenFamilySnapshot response,
+            RuntimeException error,
+            Instant expiresAt) {
 
-            private boolean isExpired() {
-                return Instant.now().isAfter(expiresAt);
-            }
+        private boolean isExpired() {
+            return Instant.now().isAfter(expiresAt);
         }
     }
 }

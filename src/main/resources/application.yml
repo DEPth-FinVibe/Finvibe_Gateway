@@ -9,9 +9,10 @@ spring:
       server:
         webflux:
           forwarded:
-            enabled: false
+            enabled: true
           x-forwarded:
-            enabled: false
+            enabled: true
+          trusted-proxies: ${FINVIBE_GATEWAY_TRUSTED_PROXIES:(127\\.0\\.0\\.1|0:0:0:0:0:0:0:1|::1|10\\..*|192\\.168\\..*|172\\.(1[6-9]|2[0-9]|3[0-1])\\..*)}
   security:
     oauth2:
       resourceserver:
