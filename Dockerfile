@@ -1,20 +1,18 @@
-FROM eclipse-temurin:21-jdk AS builder
-WORKDIR /workspace
-
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle settings.gradle ./
-RUN chmod +x gradlew
-RUN ./gradlew --no-daemon dependencies >/dev/null 2>&1 || true
-
-COPY src src
-RUN ./gradlew --no-daemon bootJar
-
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-COPY --from=builder /workspace/build/libs/*.jar app.jar
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /app/logs
+
+COPY build/libs/*.jar app.jar
+
+ENV SPRING_PROFILES_ACTIVE=prod
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+  CMD curl --fail http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-XX:+ExitOnOutOfMemoryError", "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/app/logs", "-jar", "/app/app.jar"]
