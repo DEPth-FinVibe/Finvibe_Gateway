@@ -16,6 +16,7 @@ import lombok.Setter;
 public class TokenFamilyValidationProperties {
 
     private boolean enabled = true;
+    private boolean cacheEnabled = true;
     private String redisUri = "redis://127.0.0.1:6379/0";
     private String keyPrefix = "auth:family:";
     private Duration cacheTtl = Duration.ofSeconds(30);

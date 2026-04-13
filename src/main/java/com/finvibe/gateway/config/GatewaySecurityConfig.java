@@ -8,10 +8,10 @@ import java.time.Clock;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -158,7 +158,7 @@ public class GatewaySecurityConfig {
      * @return Redis 기반 reader
      */
     @Bean
-    @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = { "enabled", "cache-enabled" }, havingValue = "true", matchIfMissing = true)
     RedisTokenFamilyReader redisTokenFamilyReader(
             TokenFamilyValidationProperties properties,
             ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
@@ -168,7 +168,7 @@ public class GatewaySecurityConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = { "enabled", "cache-enabled" }, havingValue = "true", matchIfMissing = true)
     RedisTokenFamilyCacheWriter redisTokenFamilyCacheWriter(
             TokenFamilyValidationProperties properties,
             ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
@@ -196,9 +196,15 @@ public class GatewaySecurityConfig {
     @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
     TokenFamilyReader tokenFamilyReader(
             TokenFamilyValidationProperties properties,
-            RedisTokenFamilyReader redisTokenFamilyReader,
             WasTokenFamilyReader wasTokenFamilyReader,
-            RedisTokenFamilyCacheWriter redisTokenFamilyCacheWriter) {
+            ObjectProvider<RedisTokenFamilyReader> redisTokenFamilyReaderProvider,
+            ObjectProvider<RedisTokenFamilyCacheWriter> redisTokenFamilyCacheWriterProvider) {
+        if (!properties.isCacheEnabled()) {
+            return wasTokenFamilyReader;
+        }
+
+        RedisTokenFamilyReader redisTokenFamilyReader = redisTokenFamilyReaderProvider.getObject();
+        RedisTokenFamilyCacheWriter redisTokenFamilyCacheWriter = redisTokenFamilyCacheWriterProvider.getObject();
         TokenFamilyReader fallbackTokenFamilyReader = new FallbackTokenFamilyReader(
                 redisTokenFamilyReader,
                 wasTokenFamilyReader,
