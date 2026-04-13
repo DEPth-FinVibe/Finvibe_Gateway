@@ -7,6 +7,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.time.Clock;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -100,7 +101,7 @@ public class GatewaySecurityConfig {
     @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
     TokenFamilyValidationService tokenFamilyValidationService(
-            TokenFamilyReader tokenFamilyReader,
+            @Qualifier("tokenFamilyReader") TokenFamilyReader tokenFamilyReader,
             TokenFamilyPolicy tokenFamilyPolicy) {
         return new TokenFamilyValidationService(tokenFamilyReader, tokenFamilyPolicy);
     }
@@ -173,7 +174,6 @@ public class GatewaySecurityConfig {
      */
     @Bean
     @ConditionalOnProperty(prefix = "finvibe.gateway.token-family", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnMissingBean(TokenFamilyReader.class)
     TokenFamilyReader tokenFamilyReader(
             TokenFamilyValidationProperties properties,
             RedisTokenFamilyReader redisTokenFamilyReader,
