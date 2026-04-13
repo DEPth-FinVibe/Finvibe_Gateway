@@ -40,7 +40,7 @@ finvibe:
   gateway:
     security:
       jwt:
-        secret: ${FINVIBE_GATEWAY_JWT_SECRET:finvibe-gateway-dev-secret-change-me-1234567890}
+        secret: ${JWT_SECRET:finvibe-gateway-dev-secret-change-me-1234567890}
     token-family:
       enabled: ${FINVIBE_GATEWAY_TOKEN_FAMILY_ENABLED:true}
       redis-uri: ${FINVIBE_GATEWAY_TOKEN_FAMILY_REDIS_URI:redis://127.0.0.1:6379/0}
