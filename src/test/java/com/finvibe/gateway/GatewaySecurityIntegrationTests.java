@@ -112,6 +112,19 @@ class GatewaySecurityIntegrationTests {
     }
 
     @Test
+    void ignoresAuthorizationHeaderOnPublicGatewayEndpoint() throws Exception {
+        webTestClient.get()
+                .uri("/gateway/info")
+                .header(AUTHORIZATION,
+                        "Bearer " + createJwt("another-test-secret-1234567890-abcdef", Instant.now().plusSeconds(300),
+                                ACTIVE_FAMILY_ID))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.application").isEqualTo("finvibe-gateway");
+    }
+
+    @Test
     void blocksExternalInternalPathRequests() throws Exception {
         webTestClient.get()
                 .uri("/internal/auth/token-families/" + ACTIVE_FAMILY_ID)

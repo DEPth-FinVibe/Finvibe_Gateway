@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
@@ -23,6 +24,7 @@ import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.finvibe.gateway.tokenfamily.adapter.TokenFamilyValidationWebFilter;
@@ -52,15 +54,32 @@ public class GatewaySecurityConfig {
     };
 
     /**
-     * JWT 인증과 TokenFamily 검증 필터를 포함한 보안 체인을 구성한다.
+     * 공개 경로는 인증 필터를 우회해 Authorization 헤더가 있어도 그대로 통과시킨다.
+     *
+     * @param http security builder
+     * @return public security filter chain
+     */
+    @Bean
+    @Order(0)
+    SecurityWebFilterChain publicSecurityFilterChain(ServerHttpSecurity http) {
+        return http
+                .securityMatcher(ServerWebExchangeMatchers.pathMatchers(PUBLIC_PATHS))
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
+                .build();
+    }
+
+    /**
+     * 보호 경로에만 JWT 인증과 TokenFamily 검증 필터를 적용한다.
      *
      * @param http security builder
      * @param tokenFamilyValidationProperties TokenFamily 검증 설정
      * @param tokenFamilyValidationWebFilterProvider TokenFamily 검증 필터 provider
-     * @return security filter chain
+     * @return protected security filter chain
      */
     @Bean
-    SecurityWebFilterChain springSecurityFilterChain(
+    @Order(1)
+    SecurityWebFilterChain protectedSecurityFilterChain(
             ServerHttpSecurity http,
             TokenFamilyValidationProperties tokenFamilyValidationProperties,
             ObjectProvider<TokenFamilyValidationWebFilter> tokenFamilyValidationWebFilterProvider) {
