@@ -46,6 +46,7 @@ public class GatewaySecurityConfig {
     private static final String[] PUBLIC_PATHS = {
             "/gateway/**",
             "/auth/**",
+            "/market/ws/**",
             "/actuator/health",
             "/actuator/info"
     };
