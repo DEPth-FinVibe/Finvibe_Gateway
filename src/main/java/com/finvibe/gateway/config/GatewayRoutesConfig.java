@@ -13,6 +13,15 @@ import org.springframework.context.annotation.Configuration;
 public class GatewayRoutesConfig {
 
     /**
+     * WAS가 신뢰하는 인증 주입 헤더. 클라이언트가 직접 보낼 수 없도록 gateway에서 제거한다.
+     */
+    private static final String[] TRUSTED_IDENTITY_HEADERS = {
+            "X-Authenticated-User-Id",
+            "X-Authenticated-Role",
+            "X-Token-Family-Id"
+    };
+
+    /**
      * 시장 WebSocket과 일반 WAS 요청에 대한 라우트를 구성한다.
      *
      * @param builder route locator builder
@@ -31,6 +40,12 @@ public class GatewayRoutesConfig {
                         .uri(websocketListenerUrl))
                 .route("was-service", r -> r.order(0)
                         .path("/**")
+                        .filters(f -> {
+                            for (String header : TRUSTED_IDENTITY_HEADERS) {
+                                f.removeRequestHeader(header);
+                            }
+                            return f;
+                        })
                         .uri(wasServiceUrl))
                 .build();
     }

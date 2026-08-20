@@ -16,6 +16,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -24,6 +25,7 @@ import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -54,6 +56,20 @@ public class GatewaySecurityConfig {
     };
 
     /**
+     * 비로그인 사용자도 열람할 수 있는 공개 조회 경로.
+     * 같은 prefix라도 쓰기(좋아요/작성/삭제)는 인증이 필요하므로 GET에만 적용한다.
+     */
+    private static final String[] PUBLIC_READ_PATHS = {
+            "/market/**",
+            "/news/**",
+            "/discussions/**",
+            "/themes/**",
+            "/members/check-login-id",
+            "/members/check-email",
+            "/members/check-nickname"
+    };
+
+    /**
      * 공개 경로는 인증 필터를 우회해 Authorization 헤더가 있어도 그대로 통과시킨다.
      *
      * @param http security builder
@@ -63,7 +79,7 @@ public class GatewaySecurityConfig {
     @Order(0)
     SecurityWebFilterChain publicSecurityFilterChain(ServerHttpSecurity http) {
         return http
-                .securityMatcher(ServerWebExchangeMatchers.pathMatchers(PUBLIC_PATHS))
+                .securityMatcher(publicExchangeMatcher())
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
                 .build();
@@ -91,11 +107,23 @@ public class GatewaySecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers(PUBLIC_PATHS).permitAll()
                         .pathMatchers("/internal/**").denyAll()
+                        .pathMatchers(PUBLIC_PATHS).permitAll()
+                        .pathMatchers(HttpMethod.GET, PUBLIC_READ_PATHS).permitAll()
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .build();
+    }
+
+    /**
+     * 인증 없이 통과시킬 요청(공개 경로 + 공개 조회 GET)을 판별하는 matcher를 만든다.
+     *
+     * @return 공개 요청 matcher
+     */
+    private static ServerWebExchangeMatcher publicExchangeMatcher() {
+        return ServerWebExchangeMatchers.matchers(
+                ServerWebExchangeMatchers.pathMatchers(PUBLIC_PATHS),
+                ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, PUBLIC_READ_PATHS));
     }
 
     /**

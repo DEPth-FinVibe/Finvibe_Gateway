@@ -232,6 +232,76 @@ class GatewaySecurityIntegrationTests {
         }
     }
 
+    @Test
+    void allowsPublicReadApiWithoutJwt() {
+        webTestClient.get()
+                .uri("/market/stocks/top-rising")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).isEqualTo("public-ok");
+    }
+
+    @Test
+    void allowsPublicDiscussionReadWithoutJwt() {
+        webTestClient.get()
+                .uri("/discussions")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).isEqualTo("public-ok");
+    }
+
+    @Test
+    void rejectsWriteOnPublicReadPathWithoutJwt() {
+        webTestClient.post()
+                .uri("/discussions")
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void rejectsProtectedApiEvenWhenPublicReadPathsAreOpen() {
+        webTestClient.get()
+                .uri("/wallets/balance")
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void stripsSpoofedIdentityHeadersBeforeForwardingToDownstream() throws Exception {
+        webTestClient.get()
+                .uri("/api/secured")
+                .header(AUTHORIZATION, "Bearer " + createJwt(JWT_SECRET, Instant.now().plusSeconds(300), ACTIVE_FAMILY_ID))
+                .header("X-Authenticated-User-Id", "1")
+                .header("X-Authenticated-Role", "ADMIN")
+                .header("X-Token-Family-Id", ACTIVE_FAMILY_ID)
+                .exchange()
+                .expectStatus().isOk();
+
+        for (String header : new String[]{"X-Authenticated-User-Id", "X-Authenticated-Role", "X-Token-Family-Id"}) {
+            if (firstHeaderValue(header) != null) {
+                throw new AssertionError(
+                        "Expected " + header + " to be stripped but was " + firstHeaderValue(header));
+            }
+        }
+    }
+
+    @Test
+    void stripsSpoofedIdentityHeadersOnPublicReadPath() {
+        webTestClient.get()
+                .uri("/market/stocks/top-rising")
+                .header("X-Authenticated-User-Id", "1")
+                .header("X-Authenticated-Role", "ADMIN")
+                .exchange()
+                .expectStatus().isOk();
+
+        for (String header : new String[]{"X-Authenticated-User-Id", "X-Authenticated-Role"}) {
+            if (firstHeaderValue(header) != null) {
+                throw new AssertionError(
+                        "Expected " + header + " to be stripped but was " + firstHeaderValue(header));
+            }
+        }
+    }
+
     private static int downstreamPort() {
         ensureDownstreamServer();
         return downstreamServer.getAddress().getPort();
@@ -249,7 +319,19 @@ class GatewaySecurityIntegrationTests {
         }
 
         downstreamServer.createContext("/api/secured", GatewaySecurityIntegrationTests::handleSecured);
+        downstreamServer.createContext("/market", GatewaySecurityIntegrationTests::handlePublicRead);
+        downstreamServer.createContext("/discussions", GatewaySecurityIntegrationTests::handlePublicRead);
         downstreamServer.start();
+    }
+
+    private static void handlePublicRead(HttpExchange exchange) throws IOException {
+        exchange.getRequestHeaders().forEach((name, values) -> downstreamRequestHeaders.put(name, List.copyOf(values)));
+        byte[] body = "public-ok".getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "text/plain;charset=UTF-8");
+        exchange.sendResponseHeaders(200, body.length);
+        try (OutputStream outputStream = exchange.getResponseBody()) {
+            outputStream.write(body);
+        }
     }
 
     private static void handleSecured(HttpExchange exchange) throws IOException {
